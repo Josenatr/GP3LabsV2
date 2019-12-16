@@ -41,6 +41,7 @@ private:
 	void Quit();
 	void Update(float deltaTime);
 	void Render();
+	void SetUniforms();
 
 public:
 	//public functions

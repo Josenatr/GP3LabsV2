@@ -20,11 +20,6 @@
 
 
 Application* Application::m_application = nullptr;
-RigidBody* r = new RigidBody();
-BoxPush* bp = new BoxPush();
-ImVec4 lightColour1 = ImVec4(0.95f, 0.05f, 0.05f, 1.00f);
-ImVec4 lightColour2 = ImVec4(0.05f, 0.95f, 0.05f, 1.00f);
-ImVec4 lightColour3 = ImVec4(0.05f, 0.05f, 0.95f, 1.00f);
 
 Application::Application()
 {
@@ -39,21 +34,17 @@ void Application::Init()
 	}
 
 	printf("%i joysticks were found.\n\n", SDL_NumJoysticks());
-	printf("The names of the joysticks are:\n");
 
 	joystick = nullptr;
 	gamepadController = nullptr;
 	gamepadHaptic = nullptr;
 
+	//querying and opening joysticks, controllers and haptic feedback
 	for (int i = 0; i < SDL_NumJoysticks(); i++) {
 		joystick = SDL_JoystickOpen(i);
 		gamepadHaptic = SDL_HapticOpenFromJoystick(joystick);
-		SDL_HapticRumbleInit(gamepadHaptic);
-		break;
-	}
-
-	for (int i = 0; i < SDL_NumJoysticks(); i++) {
 		gamepadController = SDL_GameControllerOpen(i);
+		SDL_HapticRumbleInit(gamepadHaptic);
 		break;
 	}
 
@@ -77,7 +68,7 @@ void Application::Init()
 	OpenGlInit();
 
 	
-	//GameInit();
+	GameInit();
 
 }
 void Application::OpenGlInit()
@@ -120,31 +111,28 @@ void Application::OpenGlInit()
 
 void Application::GameInit()
 {
-	//loading all resources
+	//loads our objects
 	Resources::GetInstance()->AddModel("cube.obj");
 	Resources::GetInstance()->AddModel("sphere.obj");
 	Resources::GetInstance()->AddModel("Cylinder.obj");
 	Resources::GetInstance()->AddModel("monkey3.obj");
 	Resources::GetInstance()->AddModel("TrafficCone.obj");
-	Resources::GetInstance()->AddModel("SpinningTop.obj");
 	Resources::GetInstance()->AddModel("Skull.obj");
 
+	//loads our textures
 	Resources::GetInstance()->AddTexture("Wood.jpg");
 	Resources::GetInstance()->AddTexture("FloorTexture.jpg");
 	Resources::GetInstance()->AddTexture("BeachBallTexture.jpg");
 	Resources::GetInstance()->AddTexture("Red.png");
 	Resources::GetInstance()->AddTexture("MonkeyTexture.png");
-	Resources::GetInstance()->AddTexture("SpinningTopTexture.jpg");
 	Resources::GetInstance()->AddTexture("BoneTexture.jpg");
 	Resources::GetInstance()->AddTexture("TrafficConeTexture.jpg");
 	Resources::GetInstance()->AddTexture("CylinderTexture.jpg");
 
-	Resources::GetInstance()->AddShader(std::make_shared<ShaderProgram>("assets/simpleVert.glsl", "assets/simpleFrag.glsl"), "simple");
-	Resources::GetInstance()->AddShader(std::make_shared<ShaderProgram>("assets/simple_VERT.glsl", "assets/simple_FRAG.glsl"), "simpler");
+	//loads our shader
+	Resources::GetInstance()->AddShader(std::make_shared<ShaderProgram>("assets/simpleVert.glsl", "assets/simpleFrag.glsl"), "simple");	
 
-	static float skullX = 10.0f;
-	static float skullY = 5.0f;
-	static float skullZ = -40.f;
+	//Entities used to create the box our scene is in ----------------------------------------------------------------------------------------------------------
 	Entity* a = new Entity();	
 	m_entities.push_back(a);
 	a->AddComponent(
@@ -233,6 +221,8 @@ void Application::GameInit()
 	a->GetComponent<RigidBody>()->Get()->setMassProps(0, btVector3());
 	a->GetTransform()->SetScale(glm::vec3(1.f, 100.f, 100.f));
 
+
+	//Cylinder Object -----------------------------------------------------------------
 	a = new Entity();
 	m_entities.push_back(a);
 	a->AddComponent(
@@ -248,6 +238,7 @@ void Application::GameInit()
 	a->GetComponent<RigidBody>()->Init(new CylinderShape(glm::vec3(1.0f, 1.0f,1.0f)));
 	a->GetTransform()->SetScale(glm::vec3(10.f, 10.f, 10.f));
 
+	//Skull Object -------------------------------------------------------------------
 	a = new Entity();
 	m_entities.push_back(a);
 	a->AddComponent(
@@ -259,6 +250,7 @@ void Application::GameInit()
 	a->GetTransform()->SetPosition(glm::vec3(5.0f, 10.0f, -40.0f));
 	a->GetTransform()->SetScale(glm::vec3(0.1f, 0.1f, 0.1f));
 
+	//Monkey Head Object -------------------------------------------------------------
 	a = new Entity();
 	m_entities.push_back(a);
 	a->AddComponent(
@@ -270,6 +262,7 @@ void Application::GameInit()
 	a->GetTransform()->SetPosition(glm::vec3(-5.f, 5.f, -40.f));
 	a->GetTransform()->SetScale(glm::vec3(5.f, 5.f, 5.f));
 
+	//Sphere Object ------------------------------------------------------------------
 	a = new Entity();
 	m_entities.push_back(a);
 	a->AddComponent(
@@ -283,6 +276,7 @@ void Application::GameInit()
 	a->GetComponent<RigidBody>()->Init(new SphereShape(1.f));
 	a->GetTransform()->SetScale(glm::vec3(1.f, 1.f, 1.f));
 
+	//Traffic Cone Object ------------------------------------------------------------
 	a = new Entity();
 	m_entities.push_back(a);
 	a->AddComponent(
@@ -296,13 +290,13 @@ void Application::GameInit()
 	a->GetComponent<RigidBody>()->Init(new CylinderShape(glm::vec3(1.f,1.f,1.f)));
 	a->GetTransform()->SetScale(glm::vec3(5.f, 5.f, 5.f));
 
-
+	//Camera Object -------------------------------------------------------------
 	a = new Entity();
 	m_entities.push_back(a);
 	CameraComp* cc = new CameraComp();
 	a->AddComponent(cc);
 	a->GetTransform()->SetPosition(glm::vec3(0.f, 10.f, 0.f));
-	cc->Start();
+	cc->OnAttach();
 
 
 	
@@ -315,6 +309,7 @@ void Application::Loop()
 	auto prevTicks = std::chrono::high_resolution_clock::now();
 	SDL_Event event;
 
+	//axis vectors used for rotation
 	glm::vec3 xAxis;
 	glm::vec3 yAxis;
 	glm::vec3 zAxis;
@@ -324,15 +319,21 @@ void Application::Loop()
 	xAxis = glm::normalize(xAxis);
 	yAxis = glm::normalize(yAxis);
 	zAxis = glm::normalize(zAxis);
+
+	//rotation quaternion
 	glm::quat rot;
+
+	//rotation values
 	float rotationA = 5.0f;
 	float rotationD = -5.0f;
 	glm::quat currentRot;
+
+	//Joystick dead zone
 	int JOYSTICK_DEAD_ZONE = 2000;
+
+	//spawn booleans
 	bool ballsSpawned = false;
 	bool cubesSpawned = false;
-
-	glm::quat startingRotation = m_entities.at(10)->GetTransform()->GetRotation();
 
 	while (m_appState != AppState::QUITTING)
 	{
@@ -340,21 +341,24 @@ void Application::Loop()
 		float deltaTime = (float)std::chrono::duration_cast<std::chrono::microseconds>(currentTicks - prevTicks).count() / 100000;
 		m_worldDeltaTime = deltaTime;
 		prevTicks = currentTicks;
-
+	
+		//sets our shader uniforms
+		float lightPosX = 0 + sinf(counter) * 25.f;
 
 		Resources::GetInstance()->GetShader("simple")->Use();
-		Resources::GetInstance()->GetShader("simple")->setVec3("lightPos", glm::vec3(sinf(counter), sinf(counter), sinf(counter)));
-		Resources::GetInstance()->GetShader("simple")->setVec3("lightColor", glm::vec3(0.1f, sinf(counter*0.1f), sinf(counter*0.7f)));
-		Resources::GetInstance()->GetShader("simple")->setVec3("viewPos", m_mainCamera->GetParentTransform()->GetPosition());
+		Resources::GetInstance()->GetShader("simple")->setVec3("lightPos", glm::vec3(lightPosX, 10, 0));
+		Resources::GetInstance()->GetShader("simple")->setVec3("lightColor", glm::vec3(0.1f, sinf(counter * 0.1f), sinf(counter * 0.7f)));
+	
 		counter += deltaTime * 0.1f;
 	
-
 		ImGui_ImplSdlGL3_NewFrame(m_window);
+
 		//poll SDL events
 		while (SDL_PollEvent(&event)) {
 			switch (event.type)
 			{
 			case SDL_QUIT:
+				Resources::GetInstance()->ReleaseResources();
 				m_appState = AppState::QUITTING;
 				break;
 			case SDL_KEYDOWN:
@@ -403,32 +407,43 @@ void Application::Loop()
 			}
 
 			switch (event.cbutton.button) {
+				//move camera forward
 			case SDL_CONTROLLER_BUTTON_DPAD_UP:
 				m_entities.at(11)->GetTransform()->AddPosition(glm::vec3(0.f, 0.f, -0.5f));
 				SDL_HapticRumblePlay(GetInstance()->gamepadHaptic, 0.4, 50);
 				break;
+
+				//move camera backward
 			case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
 				m_entities.at(11)->GetTransform()->AddPosition(glm::vec3(0.f, 0.f, 0.5f));
-				SDL_HapticRumblePlay(GetInstance()->gamepadHaptic, 0.4, 50);
-				
+				SDL_HapticRumblePlay(GetInstance()->gamepadHaptic, 0.4, 50);	
 				break;
+
+				//move camera to the right
 			case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
 				m_entities.at(11)->GetTransform()->AddPosition(glm::vec3(0.5f, 0.f, 0.f));
 				SDL_HapticRumblePlay(GetInstance()->gamepadHaptic, 0.4, 50);
 				break;
+
+				//move camera to the left
 			case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
 				m_entities.at(11)->GetTransform()->AddPosition(glm::vec3(-0.5f, 0.f, 0.f));
 				SDL_HapticRumblePlay(GetInstance()->gamepadHaptic, 0.4, 50);
-				
 				break;
+
+				//move camera up
 			case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
 				m_entities.at(11)->GetTransform()->AddPosition(glm::vec3(0.f, 1.f, 0.f));
 				SDL_HapticRumblePlay(GetInstance()->gamepadHaptic, 0.4, 50);
 				break;
+
+				//move camera down
 			case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
 				m_entities.at(11)->GetTransform()->AddPosition(glm::vec3(0.f, -1.f, 0.f));
 				SDL_HapticRumblePlay(GetInstance()->gamepadHaptic, 0.4, 50);
 				break;
+
+				//spawns balls
 			case SDL_CONTROLLER_BUTTON_START:
 				if (ballsSpawned == false)
 				{
@@ -450,7 +465,7 @@ void Application::Loop()
 					ballsSpawned = true;
 				}
 				break;
-
+			
 			}
 			switch (event.key.keysym.sym)
 			{
@@ -475,15 +490,19 @@ void Application::Loop()
 			}
 		}
 		Physics::GetInstance()->Update(deltaTime);
+		//Resources::GetInstance()->ReleaseUnusedResources();
 		//update and render all entities
 		Update(deltaTime);
 		Render();
 	
+		//draws a button which makes our objects jump
 		if (ImGui::Button("Jump"))
 		{
 			Physics::GetInstance()->AddJump(deltaTime);
 		}
 		ImGui::SameLine();
+
+		//draws a button we can use to spawn spheres in
 		if (ballsSpawned == false)
 		{
 			if (ImGui::Button("Spawn Balls"))
@@ -508,6 +527,7 @@ void Application::Loop()
 			}
 		}
 
+		// draws a button we use to spawn cubes in
 		if (cubesSpawned == false)
 		{
 			if (ImGui::Button("Spawn Cubes"))
@@ -532,6 +552,7 @@ void Application::Loop()
 			}
 		}
 
+		//lets us move our skull using sliders
 		static float skull_X = 10.0f;
 		ImGui::SliderFloat("SkullX", &skull_X, -10.0f, 10.0f);
 		static float skull_Y = 5.0f;
@@ -540,14 +561,15 @@ void Application::Loop()
 		ImGui::SliderFloat("SkullZ", &skull_Z, -50.0f, 0.0f);
 		
 		m_entities.at(7)->GetTransform()->SetPosition(glm::vec3(skull_X, skull_Y, skull_Z));
+		
+		//writes our framerate
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::Text("W - Move Ball forward\r\nS - Move Ball backward\r\nA - Move Ball left\r\nD - Move Ball Right\r\nQ - Make Ball Jump\r\nE - Make Ball Spin");
+		//writes our keyboard controls over separate lines
+		ImGui::Text("W - Move Objects forward\r\nS - Move Objects backward\r\nA - Move Objects left\r\nD - Move Objects Right\r\nQ - Make Objects Jump\r\nE - Make Objects Spin");
 		ImGui::Render();
 		ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
 		SDL_GL_SwapWindow(m_window);
 	}
-
-
 }
 void Application::Quit()
 {
@@ -577,7 +599,7 @@ Application* Application::GetInstance()
 void Application::Run()
 {
 	Init();
-	GameInit();
+	
 	Loop();
 	Quit();
 }

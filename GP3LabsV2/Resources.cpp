@@ -76,5 +76,32 @@ void Resources::ReleaseResources()
 
 void Resources::ReleaseUnusedResources()
 {
+	//Checks to see which texture objects are not being used 
+	for (auto iter = m_textures.begin(); iter != m_textures.end(); iter++)
+	{
+		if (iter->second.use_count() <= 1)
+		{
+			iter->second.reset();
+			
+		}
+	}
 
+	//Checks to see which shader objects are not being used 
+	for (auto iter = m_shaderPrograms.begin(); iter != m_shaderPrograms.end(); iter++)
+	{
+		if (iter->second.use_count() <= 1)
+		{
+			iter->second.reset();
+		}
+	}
+
+	//Checks to see which model objects are not being used 
+	for (auto iter = m_models.begin(); iter != m_models.end(); iter++)
+	{
+
+		if (iter->second.use_count() <= 1)
+		{
+			iter->second.reset();
+		}
+	}
 }

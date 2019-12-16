@@ -36,15 +36,4 @@ public:
 			__debugbreak();
 		}
 	}
-
-	void setMat4(const std::string& name, const glm::mat4& mat) const
-	{
-		glUniformMatrix4fv(glGetUniformLocation(m_program, name.c_str()), 1, GL_FALSE, &mat[0][0]);
-
-		if ((glGetUniformLocation(m_program, name.c_str()) == -1))
-		{
-			std::cerr << "Unable to load shader: " << name.c_str() << std::endl;
-			__debugbreak();
-		}
-	}
 };

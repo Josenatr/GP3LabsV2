@@ -34,10 +34,10 @@ void main()
 
 
 	vec3 viewDir = normalize(viewPos - FragPos);
-	vec3 reflectDir = reflect(-lightDir, norm);
+	vec3 halfwayDir = normalize(lightDir + viewDir);
 
 
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 256);
+	float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 256);
 	vec3 specular = specularStrength * spec * lightColor; 
 
 	vec3 tempColor = (ambient + diffuse + specular) * gammaColor.rgb;

@@ -31,7 +31,6 @@ void RigidBody::UpdateParent()
 
 	btVector3 pos = transform.getOrigin();
 
-
 	m_entity->GetTransform()->SetRotation(glm::quat(rot.getW(), rot.getX(), rot.getY(), rot.getZ()));
 	m_entity->GetTransform()->SetPosition(glm::vec3(pos.getX(), pos.getY(), pos.getZ()));
 }
@@ -42,6 +41,7 @@ void RigidBody::UpdateRigidBody()
 	m_rigidBody->setWorldTransform(t);
 	m_rigidBody->getMotionState()->setWorldTransform(t);
 }
+
 
 void RigidBody::ForceUp() 
 {
